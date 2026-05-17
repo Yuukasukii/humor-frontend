@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>幽默纠错系统 · AI相声铺</title>
     <!-- 预连接优化 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -166,11 +166,41 @@
             min-height: 3.5rem;
             max-height: 10rem;
         }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .chat-group .flex-col.md\:flex-row {
+                flex-direction: column !important;
+            }
+            .chat-group .flex-col.md\:flex-row > div {
+                width: 100%;
+                margin-bottom: 1rem;
+            }
+            .card-hover {
+                transition: none;
+            }
+            .glass-morphism {
+                backdrop-filter: blur(8px);
+            }
+            .quick-question-btn {
+                font-size: 0.7rem;
+                padding: 0.25rem 0.5rem;
+            }
+            #user-input {
+                font-size: 0.9rem;
+            }
+            .submit-rating-btn {
+                padding: 0.25rem 0.5rem;
+            }
+            .star {
+                width: 18px;
+            }
+        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden relative z-10">
-    <!-- 侧边栏内容不变（与原来相同） -->
-    <aside class="w-72 bg-slate-900 text-white flex flex-col h-full shadow-2xl relative z-20">
+    <!-- 侧边栏（移动端默认隐藏） -->
+    <aside id="sidebar" class="fixed md:relative w-72 bg-slate-900 text-white flex flex-col h-full shadow-2xl z-30 transition-transform duration-300 -translate-x-full md:translate-x-0">
         <div class="p-6 flex items-center space-x-3 border-b border-slate-800">
             <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30 animate-pulse">
                 <iconify-icon class="text-2xl" icon="mdi:emoticon-wink"></iconify-icon>
@@ -211,9 +241,12 @@
     </aside>
 
     <main class="flex-1 flex flex-col relative z-10">
-        <!-- 头部内容与原代码相同，略 -->
+        <!-- 顶部栏（增加汉堡菜单按钮） -->
         <header class="h-16 glass-morphism flex items-center justify-between px-8 z-10 shadow-sm">
             <div class="flex items-center space-x-4">
+                <button id="menu-toggle" class="md:hidden mr-2 text-slate-600 hover:text-orange-500 transition-colors">
+                    <iconify-icon icon="mdi:menu" class="text-2xl"></iconify-icon>
+                </button>
                 <h2 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-600 to-red-600">纠错中心</h2>
                 <span class="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-lg border border-green-200 uppercase flex items-center space-x-1">
                     <iconify-icon icon="mdi:circle-small" class="text-green-500"></iconify-icon>
@@ -237,6 +270,7 @@
             </div>
         </header>
 
+        <!-- 聊天区域 -->
         <section class="flex-1 overflow-y-auto p-8 chat-container" id="chat-messages">
             <div class="max-w-[1200px] mx-auto space-y-12">
                 <div class="bg-blue-50 border border-blue-100 rounded-3xl p-6 flex items-start space-x-4">
@@ -253,6 +287,7 @@
             </div>
         </section>
 
+        <!-- 加载动画 -->
         <div id="loading-indicator" class="hidden fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur-sm rounded-full px-5 py-2 shadow-lg flex items-center space-x-2 z-20 border border-orange-200">
             <div class="flex space-x-1">
                 <div class="dot-floating"></div>
@@ -262,6 +297,7 @@
             <span class="text-sm text-slate-600">AI 正在思考</span>
         </div>
 
+        <!-- 滚动按钮 -->
         <div class="fixed right-6 bottom-28 z-20 flex flex-col space-y-3">
             <button id="scroll-to-top" class="w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center text-slate-600 hover:bg-orange-100 hover:text-orange-500 transition-colors opacity-0 transition-opacity">
                 <iconify-icon icon="mdi:chevron-up" class="text-xl"></iconify-icon>
@@ -271,6 +307,7 @@
             </button>
         </div>
 
+        <!-- 输入区 -->
         <div class="p-6 bg-white/80 backdrop-blur-sm border-t border-slate-100">
             <div class="max-w-[1200px] mx-auto mb-4">
                 <div class="bg-white rounded-xl shadow-md border border-slate-200 p-3">
@@ -292,8 +329,8 @@
                     <button id="emoji-btn" class="absolute right-4 top-1/2 -translate-y-1/2 text-orange-500 hover:scale-110 transition-transform">
                         <iconify-icon class="text-2xl" icon="mdi:emoticon-neutral-outline"></iconify-icon>
                     </button>
+                    <!-- 表情选择面板 -->
                     <div id="emoji-picker" class="hidden absolute bottom-full right-0 mb-2 bg-white rounded-xl shadow-lg border border-slate-200 p-2 z-30 w-64">
-                        <!-- 表情列表不变，省略 -->
                         <div class="grid grid-cols-8 gap-1">
                             <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">😀</span>
                             <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">😎</span>

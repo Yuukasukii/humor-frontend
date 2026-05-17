@@ -798,5 +798,28 @@ function init() {
     update();
     topBtn.addEventListener('click', () => chatContainer.scrollTo({ top:0, behavior:'smooth' }));
     bottomBtn.addEventListener('click', () => chatContainer.scrollTo({ top:chatContainer.scrollHeight, behavior:'smooth' }));
+
+    // 移动端侧边栏开关
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    if (menuToggle && sidebar) {
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
+        });
+    // 点击聊天区域时自动关闭侧边栏（移动端友好）
+        chatContainer.addEventListener('click', () => {
+            if (window.innerWidth < 768 && !sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.add('-translate-x-full');
+            }
+        });
+    }
+    // 窗口大小变化时，恢复侧边栏状态
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 768) {
+            sidebar.classList.remove('-translate-x-full');
+        } else {
+            sidebar.classList.add('-translate-x-full');
+        }
+    });
 }
 init();
