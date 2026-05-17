@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>幽默纠错系统 · AI相声铺</title>
+    <!-- 预连接优化 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://code.iconify.design">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js" defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        
+        body {
+            background: linear-gradient(135deg, #f0f4fc 0%, #e6edf8 100%);
+            position: relative;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        body.loaded { opacity: 1; }
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(249,115,22,0.05) 2px, transparent 2px),
+                radial-gradient(circle at 80% 70%, rgba(99,102,241,0.04) 1px, transparent 1px);
+            background-size: 40px 40px, 30px 30px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .chat-container::-webkit-scrollbar { width: 6px; }
+        .chat-container::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px; }
+        .chat-container::-webkit-scrollbar-thumb { background: #f97316; border-radius: 10px; }
+        
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+        
+        .card-hover {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .star {
+            cursor: pointer;
+            transition: transform 0.1s ease, color 0.1s ease;
+        }
+        .star:hover { transform: scale(1.15); }
+        .star.selected { color: #fbbf24; }
+        .star-default { color: #cbd5e1; }
+        
+        .submit-rating-btn { transition: transform 0.05s ease, background-color 0.2s; }
+        .submit-rating-btn:active { transform: scale(0.96); }
+        
+        .delete-session-btn { transition: opacity 0.2s, transform 0.1s; }
+        .delete-session-btn:hover { transform: scale(1.1); color: #ef4444; }
+        
+        .chat-group:not(:last-child) {
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding-bottom: 1.5rem;
+        }
+        
+        .dot-floating {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #f97316;
+            margin: 0 2px;
+            animation: dot-pulse 1.4s infinite ease-in-out both;
+            box-shadow: 0 0 4px #f97316;
+        }
+        .dot-floating:nth-child(1) { animation-delay: -0.32s; }
+        .dot-floating:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes dot-pulse {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+            40% { transform: scale(1.2); opacity: 1; }
+        }
+        
+        .quick-question-btn {
+            transition: all 0.2s;
+        }
+        .quick-question-btn:hover {
+            background-color: #fef3c7;
+            border-color: #f97316;
+            transform: translateY(-1px);
+        }
+        
+        /* 动画效果 */
+        .chat-fade { transition: opacity 0.2s ease-in-out; opacity: 1; }
+        .chat-fade.fade-out { opacity: 0; }
+        
+        .message-enter {
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+        .message-enter-active {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .send-btn-ripple { position: relative; overflow: hidden; }
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(0);
+            animation: ripple-animation 0.6s linear;
+            pointer-events: none;
+        }
+        @keyframes ripple-animation {
+            to { transform: scale(4); opacity: 0; }
+        }
+        
+        .star-bounce {
+            animation: bounce 0.2s ease;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+        }
+        
+        .session-item {
+            position: relative;
+            overflow: hidden;
+        }
+        .session-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            transition: width 0.2s ease;
+            z-index: 0;
+        }
+        .session-item:hover::before { width: 100%; }
+        .session-item > * { position: relative; z-index: 1; }
+        
+        .user-bubble {
+            background: linear-gradient(145deg, #ffffff, #f8fafc);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.8);
+            border: 1px solid rgba(203,213,225,0.5);
+        }
+        
+        /* 输入框自动增高 */
+        #user-input {
+            resize: none;
+            overflow-y: auto;
+            min-height: 3.5rem;
+            max-height: 10rem;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden relative z-10">
+    <!-- 侧边栏内容不变（与原来相同） -->
+    <aside class="w-72 bg-slate-900 text-white flex flex-col h-full shadow-2xl relative z-20">
+        <div class="p-6 flex items-center space-x-3 border-b border-slate-800">
+            <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30 animate-pulse">
+                <iconify-icon class="text-2xl" icon="mdi:emoticon-wink"></iconify-icon>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-tight">幽默纠错 Lab</h1>
+                <p class="text-[10px] text-slate-400">AI 相声铺 · 内测版</p>
+            </div>
+        </div>
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+            <!-- 搜索框 -->
+            <div class="px-2 mb-3">
+                <div class="relative">
+                    <iconify-icon icon="mdi:magnify" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 text-sm"></iconify-icon>
+                    <input type="text" id="search-session" placeholder="搜索会话..." class="w-full bg-slate-800 rounded-lg py-1.5 pl-8 pr-3 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500">
+                </div>
+            </div>
+            <div class="flex justify-between items-center px-4 py-2">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">历史调侃</p>
+                <button id="new-chat-btn" class="text-slate-400 hover:text-orange-500 transition-colors text-sm">
+                    <iconify-icon icon="mdi:plus-circle-outline"></iconify-icon>
+                </button>
+            </div>
+            <div id="session-list" class="space-y-1"></div>
+        </nav>
+        <div class="p-6 border-t border-slate-800 bg-gradient-to-b from-slate-900 to-slate-800">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center relative">
+                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border border-slate-900"></span>
+                </div>
+                <div class="flex-1">
+                    <p class="text-xs font-medium">管理员 AI-26</p>
+                    <p class="text-[10px] text-slate-400">在线 · 随时吐槽</p>
+                </div>
+                <iconify-icon class="text-slate-500 cursor-pointer hover:text-white transition-colors" icon="mdi:cog-outline"></iconify-icon>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col relative z-10">
+        <!-- 头部内容与原代码相同，略 -->
+        <header class="h-16 glass-morphism flex items-center justify-between px-8 z-10 shadow-sm">
+            <div class="flex items-center space-x-4">
+                <h2 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-600 to-red-600">纠错中心</h2>
+                <span class="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-lg border border-green-200 uppercase flex items-center space-x-1">
+                    <iconify-icon icon="mdi:circle-small" class="text-green-500"></iconify-icon>
+                    <span>系统在线</span>
+                </span>
+            </div>
+            <div class="flex items-center space-x-6 text-sm text-slate-500 font-medium">
+                <div class="flex items-center space-x-1">
+                    <iconify-icon class="text-orange-500" icon="mdi:calendar-today"></iconify-icon>
+                    <span id="current-date"></span>
+                </div>
+                <div class="flex items-center space-x-1">
+                    <iconify-icon class="text-yellow-500" icon="mdi:lightning-bolt"></iconify-icon>
+                    <span>幽默速率: <span id="humor-speed">1.2</span>s/纠错</span>
+                </div>
+                <div class="flex items-center space-x-1 bg-slate-100 px-3 py-1 rounded-full">
+                    <iconify-icon icon="mdi:comment-text-outline" class="text-slate-500"></iconify-icon>
+                    <span id="today-questions" class="font-semibold">0</span>
+                    <span class="text-xs">今日提问</span>
+                </div>
+            </div>
+        </header>
+
+        <section class="flex-1 overflow-y-auto p-8 chat-container" id="chat-messages">
+            <div class="max-w-[1200px] mx-auto space-y-12">
+                <div class="bg-blue-50 border border-blue-100 rounded-3xl p-6 flex items-start space-x-4">
+                    <div class="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center shrink-0">
+                        <iconify-icon class="text-2xl text-white" icon="mdi:lightbulb-on"></iconify-icon>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-blue-900">使用指南</h3>
+                        <p class="text-sm text-blue-700 font-medium leading-relaxed opacity-80 mt-1">
+                            这是一个致力于让知识变得"易懂"的实验室。模型A会一本正经"胡说八道"，模型B负责用幽默感"拯救世界"。输入任何问题尝试一下！
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div id="loading-indicator" class="hidden fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur-sm rounded-full px-5 py-2 shadow-lg flex items-center space-x-2 z-20 border border-orange-200">
+            <div class="flex space-x-1">
+                <div class="dot-floating"></div>
+                <div class="dot-floating"></div>
+                <div class="dot-floating"></div>
+            </div>
+            <span class="text-sm text-slate-600">AI 正在思考</span>
+        </div>
+
+        <div class="fixed right-6 bottom-28 z-20 flex flex-col space-y-3">
+            <button id="scroll-to-top" class="w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center text-slate-600 hover:bg-orange-100 hover:text-orange-500 transition-colors opacity-0 transition-opacity">
+                <iconify-icon icon="mdi:chevron-up" class="text-xl"></iconify-icon>
+            </button>
+            <button id="scroll-to-bottom" class="w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center text-slate-600 hover:bg-orange-100 hover:text-orange-500 transition-colors opacity-0 transition-opacity">
+                <iconify-icon icon="mdi:chevron-down" class="text-xl"></iconify-icon>
+            </button>
+        </div>
+
+        <div class="p-6 bg-white/80 backdrop-blur-sm border-t border-slate-100">
+            <div class="max-w-[1200px] mx-auto mb-4">
+                <div class="bg-white rounded-xl shadow-md border border-slate-200 p-3">
+                    <p class="text-xs text-slate-500 mb-2 flex items-center gap-1"><iconify-icon icon="mdi:lightbulb-outline"></iconify-icon> 试试这些问题（点击即可提问）</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="quick-question-btn text-xs bg-slate-50 hover:bg-amber-50 text-slate-700 px-3 py-1.5 rounded-full border border-slate-200 transition-all" data-question="天空为什么是蓝色的？">🌤️ 天空为什么是蓝色的？</button>
+                        <button class="quick-question-btn text-xs bg-slate-50 hover:bg-amber-50 text-slate-700 px-3 py-1.5 rounded-full border border-slate-200 transition-all" data-question="什么是量子纠缠？">⚛️ 什么是量子纠缠？</button>
+                        <button class="quick-question-btn text-xs bg-slate-50 hover:bg-amber-50 text-slate-700 px-3 py-1.5 rounded-full border border-slate-200 transition-all" data-question="如何提高学习效率？">📚 如何提高学习效率？</button>
+                        <button class="quick-question-btn text-xs bg-slate-50 hover:bg-amber-50 text-slate-700 px-3 py-1.5 rounded-full border border-slate-200 transition-all" data-question="讲个冷笑话">😂 讲个冷笑话</button>
+                    </div>
+                </div>
+            </div>
+            <div class="max-w-[1200px] mx-auto relative flex items-start space-x-6">
+                <button class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-orange-100 hover:text-orange-500 transition-all shrink-0">
+                    <iconify-icon class="text-2xl" icon="mdi:plus-circle-outline"></iconify-icon>
+                </button>
+                <div class="relative flex-1">
+                    <textarea id="user-input" rows="1" class="w-full pl-6 pr-14 py-3 rounded-2xl border border-slate-200 bg-white focus:bg-white focus:border-orange-300 outline-none transition-all text-slate-700 shadow-sm resize-none overflow-auto" placeholder="输入一个问题，让模型A和B给你表演相声..."></textarea>
+                    <button id="emoji-btn" class="absolute right-4 top-1/2 -translate-y-1/2 text-orange-500 hover:scale-110 transition-transform">
+                        <iconify-icon class="text-2xl" icon="mdi:emoticon-neutral-outline"></iconify-icon>
+                    </button>
+                    <div id="emoji-picker" class="hidden absolute bottom-full right-0 mb-2 bg-white rounded-xl shadow-lg border border-slate-200 p-2 z-30 w-64">
+                        <!-- 表情列表不变，省略 -->
+                        <div class="grid grid-cols-8 gap-1">
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">😀</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">😎</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">😍</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">🥰</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">😘</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">😁</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">😂</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">🤣</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">😭</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">😊</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">😉</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">🙃</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">🤔</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">😴</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">🤯</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">🥳</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">🎉</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">💪</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">❤️</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">🔥</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">✨</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">⭐</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">👍</span>
+                            <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">👎</span>
+                        </div>
+                    </div>
+                </div>
+                <button id="send-btn" class="group px-8 h-14 bg-slate-900 rounded-2xl flex items-center space-x-3 hover:bg-orange-600 transition-all shadow-xl hover:shadow-orange-500/20 shrink-0">
+                    <span class="text-white font-bold">发起提问</span>
+                    <iconify-icon class="text-white group-hover:translate-x-1 transition-transform" icon="mdi:send-variant"></iconify-icon>
+                </button>
+            </div>
+        </div>
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>
