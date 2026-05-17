@@ -572,7 +572,7 @@ async function sendQuestion() {
     sendBtn.style.opacity = '0.6';
 
     try {
-        const response = await fetch('http://1.14.184.129:8000/api/ask', {
+        const response = await fetch('/api/ask', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ question })
@@ -664,7 +664,7 @@ chatContainer.addEventListener('click', async (e) => {
     };
 
     try {
-        const response = await fetch('http://1.14.184.129:8000/api/score', {
+        const response = await fetch('/api/score', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(ratingData)
         });
