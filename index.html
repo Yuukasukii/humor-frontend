@@ -167,33 +167,85 @@
             max-height: 10rem;
         }
         
-        /* 移动端适配 */
+        /* ========== 移动端适配增强 ========== */
         @media (max-width: 768px) {
-            .chat-group .flex-col.md\:flex-row {
-                flex-direction: column !important;
-            }
-            .chat-group .flex-col.md\:flex-row > div {
-                width: 100%;
-                margin-bottom: 1rem;
-            }
-            .card-hover {
-                transition: none;
-            }
-            .glass-morphism {
-                backdrop-filter: blur(8px);
-            }
-            .quick-question-btn {
+            /* 顶部栏文字缩小，允许换行 */
+            header .text-sm {
                 font-size: 0.7rem;
-                padding: 0.25rem 0.5rem;
             }
-            #user-input {
-                font-size: 0.9rem;
+            header .space-x-6 {
+                gap: 0.5rem;
             }
-            .submit-rating-btn {
-                padding: 0.25rem 0.5rem;
+            header {
+                padding-left: 1rem;
+                padding-right: 1rem;
             }
-            .star {
-                width: 18px;
+            
+            /* 模型A/B卡片内边距缩小，防止溢出 */
+            .card-hover .p-5,
+            .card-hover .p-4 {
+                padding: 0.75rem !important;
+            }
+            .card-hover p {
+                font-size: 0.85rem;
+                line-height: 1.4;
+            }
+            .text-sm.font-semibold {
+                font-size: 0.8rem;
+            }
+            
+            /* 用户气泡最大宽度限制 */
+            .user-bubble {
+                max-width: 85% !important;
+            }
+            
+            /* 发送按钮缩小 */
+            #send-btn {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+                height: 3rem !important;
+                font-size: 0.8rem !important;
+            }
+            #send-btn span {
+                font-size: 0.8rem;
+            }
+            /* 输入框区域整体间距调整 */
+            footer .space-x-6 {
+                gap: 0.5rem;
+            }
+            /* 快捷问题按钮区域 */
+            .quick-question-btn {
+                font-size: 0.65rem;
+                padding: 0.2rem 0.4rem;
+            }
+            /* 聊天区域左右内边距减小 */
+            .chat-container {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+            /* 头像与卡片间距 */
+            .flex.items-start.space-x-2 {
+                gap: 0.5rem;
+            }
+            .w-8.h-8 {
+                width: 1.75rem;
+                height: 1.75rem;
+            }
+            /* 评分区域垂直排列（如果尚未生效） */
+            .rating-area .flex-wrap {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+            }
+            .rating-area .flex-wrap > div {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+            .rating-area .flex.items-center {
+                flex-wrap: wrap;
+                justify-content: space-between;
+            }
+            .rating-area .star-rating {
+                margin-left: 0 !important;
             }
         }
     </style>
@@ -241,7 +293,7 @@
     </aside>
 
     <main class="flex-1 flex flex-col relative z-10">
-        <!-- 顶部栏（增加汉堡菜单按钮） -->
+        <!-- 顶部栏（优化右侧统计项换行） -->
         <header class="h-16 glass-morphism flex items-center justify-between px-8 z-10 shadow-sm">
             <div class="flex items-center space-x-4">
                 <button id="menu-toggle" class="md:hidden mr-2 text-slate-600 hover:text-orange-500 transition-colors">
@@ -253,7 +305,7 @@
                     <span>系统在线</span>
                 </span>
             </div>
-            <div class="flex items-center space-x-6 text-sm text-slate-500 font-medium">
+            <div class="flex items-center space-x-6 text-sm text-slate-500 font-medium md:space-x-6 flex-wrap justify-end gap-1">
                 <div class="flex items-center space-x-1">
                     <iconify-icon class="text-orange-500" icon="mdi:calendar-today"></iconify-icon>
                     <span id="current-date"></span>
