@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
     <title>幽默纠错系统 · AI相声铺</title>
     <!-- 预连接优化 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,6 +19,8 @@
             position: relative;
             opacity: 0;
             transition: opacity 0.5s ease;
+            /* 避开手机状态栏 */
+            padding-top: env(safe-area-inset-top);
         }
         body.loaded { opacity: 1; }
         body::before {
@@ -167,6 +169,14 @@
             max-height: 10rem;
         }
         
+        /* 表情面板确保在最上层且可见 */
+        #emoji-picker {
+            z-index: 9999 !important;
+        }
+        .relative.flex-1 {
+            overflow: visible !important;
+        }
+        
         /* 移动端适配增强 */
         @media (max-width: 768px) {
             /* 布局垂直化 */
@@ -199,7 +209,7 @@
                 width: 18px;
             }
             
-            /* 修复卡片文字溢出和尺寸问题 */
+            /* 修复卡片文字溢出 */
             .card-hover p,
             .bg-white.rounded-2xl p,
             .bg-gradient-to-br p {
@@ -207,12 +217,6 @@
                 white-space: normal !important;
                 overflow-wrap: break-word !important;
                 max-width: 100% !important;
-            }
-            .text-indigo-800.leading-relaxed.font-medium.text-sm {
-                font-size: 0.8rem !important;
-                line-height: 1.4 !important;
-            }
-            .text-slate-600.leading-relaxed {
                 font-size: 0.85rem !important;
                 line-height: 1.4 !important;
             }
@@ -233,7 +237,7 @@
             .user-bubble {
                 max-width: 85% !important;
             }
-            /* 顶部栏文字大小调整 */
+            /* 顶部栏 */
             header .text-sm {
                 font-size: 0.7rem;
             }
@@ -244,7 +248,7 @@
                 padding-left: 1rem;
                 padding-right: 1rem;
             }
-            /* 发送按钮大小调整 */
+            /* 发送按钮 */
             #send-btn {
                 padding-left: 1rem !important;
                 padding-right: 1rem !important;
@@ -260,10 +264,20 @@
                 padding-left: 0.5rem;
                 padding-right: 0.5rem;
             }
-            /* 评分区域在移动端垂直排列 */
+            /* 评分区域垂直排列 */
             .rating-area .flex-wrap {
                 flex-direction: column !important;
                 align-items: flex-start !important;
+            }
+            /* 确保表情面板不被截断 */
+            .relative.flex-1 {
+                overflow: visible !important;
+            }
+            #emoji-picker {
+                right: 0;
+                left: auto;
+                width: 280px;
+                max-width: 90vw;
             }
         }
     </style>
@@ -281,7 +295,6 @@
             </div>
         </div>
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-            <!-- 搜索框 -->
             <div class="px-2 mb-3">
                 <div class="relative">
                     <iconify-icon icon="mdi:magnify" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 text-sm"></iconify-icon>
@@ -311,7 +324,6 @@
     </aside>
 
     <main class="flex-1 flex flex-col relative z-10">
-        <!-- 顶部栏（移动端汉堡菜单按钮 + 右侧统计项可换行） -->
         <header class="h-16 glass-morphism flex items-center justify-between px-8 z-10 shadow-sm">
             <div class="flex items-center space-x-4">
                 <button id="menu-toggle" class="md:hidden mr-2 text-slate-600 hover:text-orange-500 transition-colors">
@@ -340,7 +352,6 @@
             </div>
         </header>
 
-        <!-- 聊天区域 -->
         <section class="flex-1 overflow-y-auto p-8 chat-container" id="chat-messages">
             <div class="max-w-[1200px] mx-auto space-y-12">
                 <div class="bg-blue-50 border border-blue-100 rounded-3xl p-6 flex items-start space-x-4">
@@ -357,7 +368,6 @@
             </div>
         </section>
 
-        <!-- 加载动画 -->
         <div id="loading-indicator" class="hidden fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur-sm rounded-full px-5 py-2 shadow-lg flex items-center space-x-2 z-20 border border-orange-200">
             <div class="flex space-x-1">
                 <div class="dot-floating"></div>
@@ -367,7 +377,6 @@
             <span class="text-sm text-slate-600">AI 正在思考</span>
         </div>
 
-        <!-- 滚动按钮 -->
         <div class="fixed right-6 bottom-28 z-20 flex flex-col space-y-3">
             <button id="scroll-to-top" class="w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center text-slate-600 hover:bg-orange-100 hover:text-orange-500 transition-colors opacity-0 transition-opacity">
                 <iconify-icon icon="mdi:chevron-up" class="text-xl"></iconify-icon>
@@ -377,7 +386,6 @@
             </button>
         </div>
 
-        <!-- 输入区 -->
         <div class="p-6 bg-white/80 backdrop-blur-sm border-t border-slate-100">
             <div class="max-w-[1200px] mx-auto mb-4">
                 <div class="bg-white rounded-xl shadow-md border border-slate-200 p-3">
@@ -394,13 +402,12 @@
                 <button class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-orange-100 hover:text-orange-500 transition-all shrink-0">
                     <iconify-icon class="text-2xl" icon="mdi:plus-circle-outline"></iconify-icon>
                 </button>
-                <div class="relative flex-1">
+                <div class="relative flex-1 overflow-visible">
                     <textarea id="user-input" rows="1" class="w-full pl-6 pr-14 py-3 rounded-2xl border border-slate-200 bg-white focus:bg-white focus:border-orange-300 outline-none transition-all text-slate-700 shadow-sm resize-none overflow-auto" placeholder="输入一个问题，让模型A和B给你表演相声..."></textarea>
                     <button id="emoji-btn" class="absolute right-4 top-1/2 -translate-y-1/2 text-orange-500 hover:scale-110 transition-transform">
                         <iconify-icon class="text-2xl" icon="mdi:emoticon-neutral-outline"></iconify-icon>
                     </button>
-                    <!-- 表情选择面板 -->
-                    <div id="emoji-picker" class="hidden absolute bottom-full right-0 mb-2 bg-white rounded-xl shadow-lg border border-slate-200 p-2 z-30 w-64">
+                    <div id="emoji-picker" class="hidden absolute bottom-full right-0 mb-2 bg-white rounded-xl shadow-lg border border-slate-200 p-2 w-64 z-[100] max-w-[90vw]">
                         <div class="grid grid-cols-8 gap-1">
                             <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">😀</span>
                             <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">😎</span>
