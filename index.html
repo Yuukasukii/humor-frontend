@@ -19,7 +19,6 @@
             position: relative;
             opacity: 0;
             transition: opacity 0.5s ease;
-            /* 避开手机状态栏 */
             padding-top: env(safe-area-inset-top);
         }
         body.loaded { opacity: 1; }
@@ -237,12 +236,12 @@
             .user-bubble {
                 max-width: 85% !important;
             }
-            /* 顶部栏 */
-            header .text-sm {
-                font-size: 0.7rem;
+            /* 顶部栏：隐藏不必要的内容，只保留汉堡菜单和标题 */
+            header .flex.items-center:first-child {
+                flex: 1;
             }
-            header .space-x-6 {
-                gap: 0.5rem;
+            header .flex.items-center:last-child {
+                display: none !important;
             }
             header {
                 padding-left: 1rem;
@@ -278,6 +277,9 @@
                 left: auto;
                 width: 280px;
                 max-width: 90vw;
+                bottom: 100%;
+                top: auto;
+                margin-bottom: 0.5rem;
             }
         }
     </style>
@@ -324,18 +326,19 @@
     </aside>
 
     <main class="flex-1 flex flex-col relative z-10">
+        <!-- 顶部栏：移动端隐藏右侧统计信息 -->
         <header class="h-16 glass-morphism flex items-center justify-between px-8 z-10 shadow-sm">
             <div class="flex items-center space-x-4">
                 <button id="menu-toggle" class="md:hidden mr-2 text-slate-600 hover:text-orange-500 transition-colors">
                     <iconify-icon icon="mdi:menu" class="text-2xl"></iconify-icon>
                 </button>
                 <h2 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-600 to-red-600">纠错中心</h2>
-                <span class="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-lg border border-green-200 uppercase flex items-center space-x-1">
+                <span class="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-lg border border-green-200 uppercase flex items-center space-x-1 md:flex hidden">
                     <iconify-icon icon="mdi:circle-small" class="text-green-500"></iconify-icon>
                     <span>系统在线</span>
                 </span>
             </div>
-            <div class="flex items-center space-x-6 text-sm text-slate-500 font-medium flex-wrap justify-end gap-1">
+            <div class="flex items-center space-x-6 text-sm text-slate-500 font-medium md:flex hidden">
                 <div class="flex items-center space-x-1">
                     <iconify-icon class="text-orange-500" icon="mdi:calendar-today"></iconify-icon>
                     <span id="current-date"></span>
@@ -398,7 +401,7 @@
                     </div>
                 </div>
             </div>
-            <div class="max-w-[1200px] mx-auto relative flex items-start space-x-6">
+            <div class="max-w-[1200px] mx-auto relative flex items-start space-x-6 overflow-visible">
                 <button class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-orange-100 hover:text-orange-500 transition-all shrink-0">
                     <iconify-icon class="text-2xl" icon="mdi:plus-circle-outline"></iconify-icon>
                 </button>
@@ -407,7 +410,7 @@
                     <button id="emoji-btn" class="absolute right-4 top-1/2 -translate-y-1/2 text-orange-500 hover:scale-110 transition-transform">
                         <iconify-icon class="text-2xl" icon="mdi:emoticon-neutral-outline"></iconify-icon>
                     </button>
-                    <div id="emoji-picker" class="hidden absolute bottom-full right-0 mb-2 bg-white rounded-xl shadow-lg border border-slate-200 p-2 w-64 z-[100] max-w-[90vw]">
+                    <div id="emoji-picker" class="hidden absolute bottom-full right-0 mb-2 bg-white rounded-xl shadow-lg border border-slate-200 p-2 w-64 z-[9999] max-w-[90vw]">
                         <div class="grid grid-cols-8 gap-1">
                             <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">😀</span>
                             <span class="cursor-pointer text-xl hover:bg-slate-100 p-1 rounded">😎</span>
