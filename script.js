@@ -640,32 +640,51 @@ chatContainer.addEventListener('click', async (e) => {
     const msgId = btn.getAttribute('data-msgid');
     if (!msgId) return;
 
+    // 查找对应的消息和会话
     let targetMsg = null, targetSessionId = null;
     for (const session of sessions) {
         const msg = session.messages.find(m => m.msgId === msgId);
-        if (msg) { targetMsg = msg; targetSessionId = session.id; break; }
+        if (msg) {
+            targetMsg = msg;
+            targetSessionId = session.id;
+            break;
+        }
     }
-    if (!targetMsg) { alert('未找到消息'); return; }
+    if (!targetMsg) {
+        alert('未找到消息');
+        return;
+    }
 
-    const container = btn.closest('.flex-1');
-    const ratingRows = container.querySelectorAll('[data-dimension]');
+    // 获取当前消息卡片中的评分行（四个维度）
+    const card = btn.closest('.flex-1'); // 模型B卡片容器
+    const ratingRows = card.querySelectorAll('[data-dimension]');
     const scores = {};
     ratingRows.forEach(row => {
         const dim = row.getAttribute('data-dimension');
-        scores[dim] = parseInt(row.getAttribute('data-value')) || 5;
+        const val = parseInt(row.getAttribute('data-value'));
+        scores[dim] = isNaN(val) ? 5 : val;
     });
 
     const ratingData = {
-        msg_id: msgId, session_id: targetSessionId,
-        question: targetMsg.question, error_answer: targetMsg.modelA,
-        humor_text: targetMsg.modelB, timestamp: targetMsg.timestamp,
-        fun: scores.fun, creativity: scores.creativity,
-        naturalness: scores.naturalness, relevance: scores.relevance
+        msg_id: msgId,
+        session_id: targetSessionId,
+        question: targetMsg.question,
+        error_answer: targetMsg.modelA,
+        humor_text: targetMsg.modelB,
+        timestamp: targetMsg.timestamp,
+        fun: scores.fun,
+        creativity: scores.creativity,
+        naturalness: scores.naturalness,
+        relevance: scores.relevance
     };
+
+    // 调试：打印评分数据
+    console.log('提交评分数据:', ratingData);
 
     try {
         const response = await fetch('/api/score', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(ratingData)
         });
         if (response.ok) {
@@ -674,10 +693,13 @@ chatContainer.addEventListener('click', async (e) => {
             btn.innerText = '已评分';
             btn.classList.remove('bg-indigo-500', 'hover:bg-indigo-600');
             btn.classList.add('bg-slate-400', 'cursor-not-allowed');
-        } else alert('提交失败');
+        } else {
+            const errorText = await response.text();
+            alert(`提交失败 (${response.status}): ${errorText}`);
+        }
     } catch (err) {
-        console.error(err);
-        alert('网络错误');
+        console.error('评分提交失败:', err);
+        alert('网络错误：' + err.message);
     }
 });
 
