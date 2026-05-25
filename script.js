@@ -57,6 +57,7 @@ function loadSessionsFromLocalStorage() {
                     if (!msg.msgId) {
                         msg.msgId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
                     }
+                    if (msg.rated === undefined) msg.rated = false; // 兼容旧数据
                 });
                 if (!session.createdAt) session.createdAt = 0;
             });
@@ -97,13 +98,13 @@ function showEmptyState() {
     }
 }
 
-// ================== 五角星评分组件（正确保存评分值） ==================
+// ================== 五角星评分组件 ==================
 function createStarRatingRow(dimension, msgId, initialValue = 5) {
     const row = document.createElement('div');
     row.className = 'flex items-center space-x-1 text-xs';
     row.setAttribute('data-dimension', dimension);
     row.setAttribute('data-msgid', msgId);
-    row.setAttribute('data-value', initialValue); // 存储当前评分值
+    row.setAttribute('data-value', initialValue);
 
     const nameMap = { fun:'趣味', creativity:'创意', naturalness:'自然', relevance:'关联' };
     const nameSpan = document.createElement('span');
@@ -144,14 +145,11 @@ function createStarRatingRow(dimension, msgId, initialValue = 5) {
         star.addEventListener('click', (e) => {
             e.stopPropagation();
             currentValue = i;
-            // 更新星星样式
             stars.forEach((s, idx) => {
                 if (idx < i) s.classList.add('selected');
                 else s.classList.remove('selected');
             });
-            // 保存评分值到 row 的 data-value 属性
             row.setAttribute('data-value', currentValue);
-            // 可选：添加点击动画
             star.classList.add('star-bounce');
             setTimeout(() => star.classList.remove('star-bounce'), 200);
         });
@@ -212,7 +210,7 @@ async function copyToClipboard(text, btnElement) {
 }
 
 // ================== 添加消息到界面 ==================
-function addMessageToChatDOM(question, modelA, modelB, timestamp, msgId) {
+function addMessageToChatDOM(question, modelA, modelB, timestamp, msgId, rated = false) {
     const container = chatContainer.querySelector('.max-w-\\[1200px\\].mx-auto.space-y-12');
     if (!container) return;
     
@@ -330,8 +328,13 @@ function addMessageToChatDOM(question, modelA, modelB, timestamp, msgId) {
         });
         const submitBtn = document.createElement('button');
         submitBtn.className = 'submit-rating-btn text-xs bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1 rounded-md transition-colors';
-        submitBtn.innerText = '提交';
+        submitBtn.innerText = rated ? '已评分' : '提交';
         submitBtn.setAttribute('data-msgid', msgId);
+        if (rated) {
+            submitBtn.disabled = true;
+            submitBtn.classList.remove('bg-indigo-500', 'hover:bg-indigo-600');
+            submitBtn.classList.add('bg-slate-400', 'cursor-not-allowed');
+        }
         flexRow.appendChild(submitBtn);
         ratingContainer.appendChild(flexRow);
     }
@@ -530,7 +533,7 @@ function renderCurrentSession() {
         </div>
     `;
     session.messages.forEach(msg => {
-        addMessageToChatDOM(msg.question, msg.modelA, msg.modelB, msg.timestamp, msg.msgId);
+        addMessageToChatDOM(msg.question, msg.modelA, msg.modelB, msg.timestamp, msg.msgId, msg.rated);
     });
     showEmptyState();
     chatContainer.scrollTop = 0;
@@ -558,7 +561,7 @@ async function sendQuestion() {
         const data = await response.json();
         const timestamp = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
         const msgId = `msg_${Date.now()}_${Math.random().toString(36).substr(2,6)}`;
-        const newMsg = { msgId, question, modelA: data.modelA_answer, modelB: data.modelB_answer, timestamp };
+        const newMsg = { msgId, question, modelA: data.modelA_answer, modelB: data.modelB_answer, timestamp, rated: false };
         currentSession.messages.push(newMsg);
         currentSession.createdAt = Date.now();
         const index = sessions.findIndex(s => s.id === currentSession.id);
@@ -570,7 +573,7 @@ async function sendQuestion() {
             currentSession.title = question.length > 20 ? question.slice(0,20)+'...' : question;
         }
         renderSessionListIncremental();
-        addMessageToChatDOM(question, data.modelA_answer, data.modelB_answer, timestamp, msgId);
+        addMessageToChatDOM(question, data.modelA_answer, data.modelB_answer, timestamp, msgId, false);
         userInput.value = '';
         userInput.style.height = 'auto';
         saveSessionsToLocalStorage();
@@ -585,7 +588,8 @@ async function sendQuestion() {
             msgId, question,
             modelA: mock.modelA,
             modelB: mock.modelB,
-            timestamp
+            timestamp,
+            rated: false
         };
         currentSession.messages.push(newMsg);
         currentSession.createdAt = Date.now();
@@ -598,7 +602,7 @@ async function sendQuestion() {
             currentSession.title = question.length > 20 ? question.slice(0,20)+'...' : question;
         }
         renderSessionListIncremental();
-        addMessageToChatDOM(question, mock.modelA, mock.modelB, timestamp, msgId);
+        addMessageToChatDOM(question, mock.modelA, mock.modelB, timestamp, msgId, false);
         userInput.value = '';
         userInput.style.height = 'auto';
         saveSessionsToLocalStorage();
@@ -610,7 +614,7 @@ async function sendQuestion() {
     }
 }
 
-// ================== 评分提交（修复版） ==================
+// ================== 评分提交（持久化评分状态） ==================
 chatContainer.addEventListener('click', async (e) => {
     const btn = e.target.closest('.submit-rating-btn');
     if (!btn) return;
@@ -623,15 +627,14 @@ chatContainer.addEventListener('click', async (e) => {
         if (msg) { targetMsg = msg; targetSessionId = session.id; break; }
     }
     if (!targetMsg) { alert('未找到消息'); return; }
+    if (targetMsg.rated) { alert('该消息已经评分过了'); return; }
 
-    // 获取模型B卡片容器
-    const container = btn.closest('.flex-1');
-    const ratingRows = container.querySelectorAll('[data-dimension]');
+    const card = btn.closest('.flex-1');
+    const ratingRows = card.querySelectorAll('[data-dimension]');
     const scores = {};
     ratingRows.forEach(row => {
         const dim = row.getAttribute('data-dimension');
         const val = parseInt(row.getAttribute('data-value'));
-        console.log(`${dim} 的 data-value = ${row.getAttribute('data-value')} => ${val}`);
         scores[dim] = isNaN(val) ? 5 : val;
     });
 
@@ -648,8 +651,6 @@ chatContainer.addEventListener('click', async (e) => {
         relevance: scores.relevance
     };
 
-    console.log('提交评分数据:', ratingData);
-
     try {
         const response = await fetch('/api/score', {
             method: 'POST',
@@ -662,6 +663,9 @@ chatContainer.addEventListener('click', async (e) => {
             btn.innerText = '已评分';
             btn.classList.remove('bg-indigo-500', 'hover:bg-indigo-600');
             btn.classList.add('bg-slate-400', 'cursor-not-allowed');
+            // 更新消息的 rated 标志
+            targetMsg.rated = true;
+            saveSessionsToLocalStorage();
         } else {
             const errorText = await response.text();
             alert(`提交失败 (${response.status}): ${errorText}`);
