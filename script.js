@@ -12,7 +12,7 @@ const searchInput = document.getElementById('search-session');
 let sessions = [];
 let currentSessionId = null;
 let searchKeyword = '';
-let sessionItemMap = new Map(); // 存储会话ID到DOM元素的映射，用于增量更新
+let sessionItemMap = new Map();
 
 // ================== 今日提问计数 ==================
 function getTodayKey() {
@@ -97,27 +97,26 @@ function showEmptyState() {
     }
 }
 
-// ================== 五角星评分组件（事件委托版本） ==================
+// ================== 五角星评分组件（正确保存评分值） ==================
 function createStarRatingRow(dimension, msgId, initialValue = 5) {
     const row = document.createElement('div');
     row.className = 'flex items-center space-x-1 text-xs';
-    
+    row.setAttribute('data-dimension', dimension);
+    row.setAttribute('data-msgid', msgId);
+    row.setAttribute('data-value', initialValue); // 存储当前评分值
+
     const nameMap = { fun:'趣味', creativity:'创意', naturalness:'自然', relevance:'关联' };
     const nameSpan = document.createElement('span');
     nameSpan.className = 'text-slate-600 w-8';
     nameSpan.innerText = nameMap[dimension];
-    
+
     const starsContainer = document.createElement('div');
     starsContainer.className = 'flex space-x-0.5';
-    starsContainer.setAttribute('data-dimension', dimension);
-    starsContainer.setAttribute('data-msgid', msgId);
-    starsContainer.style.cursor = 'pointer';
-    
+
     const tooltipBox = document.createElement('div');
     tooltipBox.className = 'text-[10px] text-slate-500 bg-slate-100 px-1 rounded';
     tooltipBox.innerText = '?';
-    tooltipBox.style.cursor = 'help';
-    
+
     const descriptions = {
         fun: ['差', '较差', '一般', '较好', '趣味性拉满'],
         creativity: ['差', '较差', '一般', '较好', '创意性爆表'],
@@ -125,50 +124,44 @@ function createStarRatingRow(dimension, msgId, initialValue = 5) {
         relevance: ['差', '较差', '一般', '较好', '内容关联度MAX']
     };
     const descList = descriptions[dimension] || ['差','较差','一般','较好','完美'];
+
     let currentValue = initialValue;
     const stars = [];
-    
+
     for (let i = 1; i <= 5; i++) {
         const star = document.createElement('iconify-icon');
         star.setAttribute('icon', 'mdi:star');
         star.setAttribute('width', '14');
         star.classList.add('star', i <= currentValue ? 'selected' : 'star-default');
         star.setAttribute('data-star-value', i);
+
+        star.addEventListener('mouseenter', () => {
+            tooltipBox.innerText = descList[i-1];
+        });
+        star.addEventListener('mouseleave', () => {
+            tooltipBox.innerText = '?';
+        });
+        star.addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentValue = i;
+            // 更新星星样式
+            stars.forEach((s, idx) => {
+                if (idx < i) s.classList.add('selected');
+                else s.classList.remove('selected');
+            });
+            // 保存评分值到 row 的 data-value 属性
+            row.setAttribute('data-value', currentValue);
+            // 可选：添加点击动画
+            star.classList.add('star-bounce');
+            setTimeout(() => star.classList.remove('star-bounce'), 200);
+        });
         stars.push(star);
         starsContainer.appendChild(star);
     }
-    
-    // 使用事件委托处理鼠标悬停和点击
-    starsContainer.addEventListener('mouseenter', (e) => {
-        const star = e.target.closest('.star');
-        if (!star) return;
-        const idx = parseInt(star.getAttribute('data-star-value')) - 1;
-        tooltipBox.innerText = descList[idx];
-    }, true);
-    starsContainer.addEventListener('mouseleave', () => {
-        tooltipBox.innerText = '?';
-    });
-    starsContainer.addEventListener('click', (e) => {
-        const star = e.target.closest('.star');
-        if (!star) return;
-        const idx = parseInt(star.getAttribute('data-star-value'));
-        if (isNaN(idx)) return;
-        star.classList.add('star-bounce');
-        setTimeout(() => star.classList.remove('star-bounce'), 200);
-        currentValue = idx;
-        stars.forEach((s, i) => {
-            if (i < idx) s.classList.add('selected');
-            else s.classList.remove('selected');
-        });
-        row.setAttribute('data-value', currentValue);
-    });
-    
+
     row.appendChild(nameSpan);
     row.appendChild(starsContainer);
     row.appendChild(tooltipBox);
-    row.setAttribute('data-dimension', dimension);
-    row.setAttribute('data-msgid', msgId);
-    row.setAttribute('data-value', currentValue);
     return row;
 }
 
@@ -359,7 +352,7 @@ function addMessageToChatDOM(question, modelA, modelB, timestamp, msgId) {
     }
 }
 
-// ================== 构建单个会话条目 ==================
+// ================== 会话列表相关函数（保持不变） ==================
 function buildSessionItem(session) {
     const div = document.createElement('div');
     const isCurrent = (session.id === currentSessionId);
@@ -370,17 +363,14 @@ function buildSessionItem(session) {
     titleSpan.className = `text-sm truncate ${isCurrent ? 'text-orange-400' : 'text-slate-300'}`;
     titleSpan.innerText = escapeHtml(session.title);
     titleSpan.title = session.title;
-    // 双击重命名
     titleSpan.addEventListener('dblclick', (e) => {
         e.stopPropagation();
         const newName = prompt('请输入新的会话名称:', session.title);
         if (newName && newName.trim() !== '') {
             session.title = newName.trim();
             saveSessionsToLocalStorage();
-            // 更新当前会话的标题显示
             const targetSpan = sessionItemMap.get(session.id)?.querySelector('span:last-child');
             if (targetSpan) targetSpan.innerText = escapeHtml(session.title);
-            // 如果当前会话被重命名且当前显示的是该会话，不需要刷新内容
         }
     });
     left.innerHTML = `<iconify-icon icon="mdi:chat" class="group-hover:text-orange-400 ${isCurrent ? 'text-orange-400' : 'text-slate-400'}"></iconify-icon>`;
@@ -401,7 +391,6 @@ function buildSessionItem(session) {
     return div;
 }
 
-// ================== 增量渲染会话列表（修复颜色问题） ==================
 function renderSessionListIncremental() {
     if (!sessionList) return;
     let filteredSessions = sessions;
@@ -409,13 +398,11 @@ function renderSessionListIncremental() {
         const keyword = searchKeyword.toLowerCase();
         filteredSessions = sessions.filter(s => s.title.toLowerCase().includes(keyword));
     }
-    // 获取当前列表中已有的会话ID
     const existingIds = new Set();
     sessionList.querySelectorAll('.session-item').forEach(item => {
         const id = item.getAttribute('data-session-id');
         if (id) existingIds.add(id);
     });
-    // 移除不在 filteredSessions 中的项
     for (let item of sessionList.querySelectorAll('.session-item')) {
         const id = item.getAttribute('data-session-id');
         if (id && !filteredSessions.some(s => s.id === id)) {
@@ -423,7 +410,6 @@ function renderSessionListIncremental() {
             sessionItemMap.delete(id);
         }
     }
-    // 按顺序插入/更新
     filteredSessions.forEach((session, idx) => {
         let existingItem = sessionItemMap.get(session.id);
         const isCurrent = (session.id === currentSessionId);
@@ -431,7 +417,6 @@ function renderSessionListIncremental() {
             existingItem = buildSessionItem(session);
             existingItem.setAttribute('data-session-id', session.id);
             sessionItemMap.set(session.id, existingItem);
-            // 插入到正确位置
             const children = sessionList.children;
             if (idx === 0) {
                 sessionList.prepend(existingItem);
@@ -444,27 +429,22 @@ function renderSessionListIncremental() {
                 }
             }
         } else {
-            // 更新背景色
             existingItem.classList.toggle('bg-slate-800', isCurrent);
             existingItem.classList.toggle('hover:bg-slate-800', !isCurrent);
-            // 更新图标颜色
             const icon = existingItem.querySelector('iconify-icon');
             if (icon) {
                 icon.classList.toggle('text-orange-400', isCurrent);
                 icon.classList.toggle('text-slate-400', !isCurrent);
             }
-            // 更新标题文字颜色
             const titleSpan = existingItem.querySelector('span:last-child');
             if (titleSpan) {
                 titleSpan.classList.toggle('text-orange-400', isCurrent);
                 titleSpan.classList.toggle('text-slate-300', !isCurrent);
-                // 同时更新文本内容（如果标题变了）
                 if (titleSpan.innerText !== escapeHtml(session.title)) {
                     titleSpan.innerText = escapeHtml(session.title);
                     titleSpan.title = session.title;
                 }
             }
-            // 重新排序：如果位置变了，需要移动DOM
             const currentIndex = Array.from(sessionList.children).indexOf(existingItem);
             if (currentIndex !== idx) {
                 const targetNode = sessionList.children[idx];
@@ -478,13 +458,11 @@ function renderSessionListIncremental() {
     });
 }
 
-// ================== 会话管理函数 ==================
 function deleteSession(sessionId) {
     const idx = sessions.findIndex(s => s.id === sessionId);
     if (idx === -1) return;
     if (confirm(`删除会话“${sessions[idx].title}”?`)) {
         sessions.splice(idx, 1);
-        // 移除DOM映射
         const item = sessionItemMap.get(sessionId);
         if (item) item.remove();
         sessionItemMap.delete(sessionId);
@@ -532,7 +510,6 @@ function createNewSession() {
     switchSession(newId);
 }
 
-// ================== 会话渲染 ==================
 function renderCurrentSession() {
     if (!currentSessionId) return;
     const session = sessions.find(s => s.id === currentSessionId);
@@ -633,35 +610,28 @@ async function sendQuestion() {
     }
 }
 
-// ================== 评分提交 ==================
+// ================== 评分提交（修复版） ==================
 chatContainer.addEventListener('click', async (e) => {
     const btn = e.target.closest('.submit-rating-btn');
     if (!btn) return;
     const msgId = btn.getAttribute('data-msgid');
     if (!msgId) return;
 
-    // 查找对应的消息和会话
     let targetMsg = null, targetSessionId = null;
     for (const session of sessions) {
         const msg = session.messages.find(m => m.msgId === msgId);
-        if (msg) {
-            targetMsg = msg;
-            targetSessionId = session.id;
-            break;
-        }
+        if (msg) { targetMsg = msg; targetSessionId = session.id; break; }
     }
-    if (!targetMsg) {
-        alert('未找到消息');
-        return;
-    }
+    if (!targetMsg) { alert('未找到消息'); return; }
 
-    // 获取当前消息卡片中的评分行（四个维度）
-    const card = btn.closest('.flex-1'); // 模型B卡片容器
-    const ratingRows = card.querySelectorAll('[data-dimension]');
+    // 获取模型B卡片容器
+    const container = btn.closest('.flex-1');
+    const ratingRows = container.querySelectorAll('[data-dimension]');
     const scores = {};
     ratingRows.forEach(row => {
         const dim = row.getAttribute('data-dimension');
         const val = parseInt(row.getAttribute('data-value'));
+        console.log(`${dim} 的 data-value = ${row.getAttribute('data-value')} => ${val}`);
         scores[dim] = isNaN(val) ? 5 : val;
     });
 
@@ -678,7 +648,6 @@ chatContainer.addEventListener('click', async (e) => {
         relevance: scores.relevance
     };
 
-    // 调试：打印评分数据
     console.log('提交评分数据:', ratingData);
 
     try {
@@ -828,14 +797,12 @@ function init() {
         menuToggle.addEventListener('click', () => {
             sidebar.classList.toggle('-translate-x-full');
         });
-    // 点击聊天区域时自动关闭侧边栏（移动端友好）
         chatContainer.addEventListener('click', () => {
             if (window.innerWidth < 768 && !sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.add('-translate-x-full');
             }
         });
     }
-    // 窗口大小变化时，恢复侧边栏状态
     window.addEventListener('resize', () => {
         if (window.innerWidth >= 768) {
             sidebar.classList.remove('-translate-x-full');
