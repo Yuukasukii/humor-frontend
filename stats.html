@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>数据看板 · 幽默纠错系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        body { background: #f5f7fc; }
+        .stat-card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 1.25rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            transition: transform 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); }
+        .chart-container {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+        .filter-btn {
+            background: #f1f5f9;
+            color: #475569;
+            transition: all 0.2s;
+        }
+        .filter-btn.active {
+            background: #f97316;
+            color: white;
+        }
+        @media (max-width: 768px) {
+            .stat-card { padding: 0.75rem; }
+            .stat-card .text-3xl { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <nav class="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <iconify-icon icon="mdi:chart-line" class="text-2xl text-orange-500"></iconify-icon>
+                <h1 class="text-xl font-bold text-slate-800">数据看板</h1>
+            </div>
+            <a href="index.html" class="text-slate-500 hover:text-orange-500 transition flex items-center space-x-1">
+                <iconify-icon icon="mdi:arrow-left"></iconify-icon>
+                <span>返回主界面</span>
+            </a>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card">
+                <p class="text-slate-500 text-sm">总提交次数</p>
+                <p class="text-3xl font-bold text-slate-800" id="total-submissions">-</p>
+            </div>
+            <div class="stat-card">
+                <p class="text-slate-500 text-sm">平均趣味性</p>
+                <p class="text-3xl font-bold text-orange-600" id="avg-fun">-</p>
+            </div>
+            <div class="stat-card">
+                <p class="text-slate-500 text-sm">平均创意性</p>
+                <p class="text-3xl font-bold text-indigo-600" id="avg-creativity">-</p>
+            </div>
+            <div class="stat-card">
+                <p class="text-slate-500 text-sm">平均自然度</p>
+                <p class="text-3xl font-bold text-green-600" id="avg-naturalness">-</p>
+            </div>
+            <div class="stat-card sm:col-span-2 lg:col-span-1">
+                <p class="text-slate-500 text-sm">平均内容关联度</p>
+                <p class="text-3xl font-bold text-purple-600" id="avg-relevance">-</p>
+            </div>
+            <div class="stat-card sm:col-span-2 lg:col-span-1">
+                <p class="text-slate-500 text-sm">数据时间范围</p>
+                <p class="text-sm font-medium text-slate-600" id="date-range">-</p>
+            </div>
+        </div>
+
+        <div class="flex justify-end mb-6">
+            <div class="flex space-x-2 bg-white rounded-xl p-1 shadow-sm">
+                <button data-days="7" class="filter-btn px-4 py-1.5 rounded-lg text-sm font-medium">近7天</button>
+                <button data-days="30" class="filter-btn px-4 py-1.5 rounded-lg text-sm font-medium">近30天</button>
+                <button data-days="all" class="filter-btn active px-4 py-1.5 rounded-lg text-sm font-medium">全部</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="chart-container">
+                <h3 class="text-md font-semibold text-slate-700 mb-3">📊 各维度平均分</h3>
+                <div id="bar-chart" style="height: 350px;"></div>
+            </div>
+            <div class="chart-container">
+                <h3 class="text-md font-semibold text-slate-700 mb-3">📈 每日提交趋势</h3>
+                <div id="line-chart" style="height: 350px;"></div>
+            </div>
+            <div class="chart-container lg:col-span-2">
+                <h3 class="text-md font-semibold text-slate-700 mb-3">🥧 趣味性评分分布</h3>
+                <div id="pie-chart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </main>
+    <script src="stats.js"></script>
+</body>
+</html>
